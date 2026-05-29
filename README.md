@@ -29,6 +29,7 @@ Dashboard de monitoramento residencial rodando em **Raspberry Pi 3B+** com tela 
 ## 🖼️ Preview
 
 > Dashboard rodando em 800×480px (tela oficial de 7" do Raspberry Pi)
+> ![Dashboard](screenshot.png)
 
 | Seção | Descrição |
 |---|---|
