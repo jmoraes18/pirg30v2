@@ -1,0 +1,13 @@
+# Credenciais — NUNCA commitar
+.env
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Snapshots da câmera
+snapshots/
+
+# Logs
+*.log
