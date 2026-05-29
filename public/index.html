@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800, initial-scale=1">
+<title>pirg30v2 · sua rede, sob controle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0f1a; --surface: #131929; --border: #1e2d4a; --muted: #4a6a9a;
+    --text: #e2e8f0; --green: #22d3a8; --amber: #f59e0b;
+    --blue: #60a5fa; --red: #ef4444; --orange: #fb923c;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    width: 800px; height: 480px; overflow: hidden;
+    padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+  .val   { font-size: 24px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .sub   { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 28px; height: 28px; background: #1a2d50; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .logo-name { font-size: 13px; font-weight: 600; letter-spacing: .04em; }
+  .logo-tagline { font-size: 9px; color: #2a4a7a; font-style: italic; margin-top: 1px; }
+  .logo-dev { font-size: 9px; color: #1e3560; margin-top: 1px; }
+  .dot   { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+  .dot-g { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .dot-a { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+  .dot-r { background: var(--red); }
+  .clock { font-size: 20px; font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--blue); text-align: right; }
+  .date  { font-size: 10px; color: var(--muted); text-align: right; }
+  .row-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; flex-shrink: 0; }
+  .row-main    { display: grid; grid-template-columns: 1.2fr 0.8fr 0.8fr; gap: 7px; flex: 1; min-height: 0; }
+  .row-bottom  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; flex-shrink: 0; }
+  .section-title { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  .ap-row { display: flex; align-items: center; padding: 5px 0; border-bottom: 0.5px solid var(--border); gap: 6px; }
+  .ap-row:last-child { border-bottom: none; }
+  .ap-info { min-width: 0; flex: 1; }
+  .ap-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ap-band { font-size: 10px; color: var(--muted); }
+  .bar-wrap { flex: 1; background: #0d1525; border-radius: 3px; height: 4px; }
+  .bar-fill { height: 4px; border-radius: 3px; background: linear-gradient(90deg, #1e40af, #22d3a8); transition: width .5s; }
+  .ap-cnt  { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); min-width: 36px; text-align: right; }
+  .ag-row  { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 0.5px solid var(--border); font-size: 11px; }
+  .ag-row:last-child { border-bottom: none; }
+  .ag-domain { color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+  .ag-cnt    { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--red); }
+  .sys-row   { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; }
+  .sys-row:last-child { margin-bottom: 0; }
+  .sys-label { width: 28px; color: var(--muted); }
+  .sys-bar   { flex: 1; background: #0d1525; border-radius: 3px; height: 4px; }
+  .sys-fill  { height: 4px; border-radius: 3px; transition: width .5s; }
+  .sys-val   { font-family: 'JetBrains Mono', monospace; font-size: 10px; min-width: 42px; text-align: right; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 3px; height: 44px; }
+  .bar-col    { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .bar-allowed { width: 100%; border-radius: 2px 2px 0 0; background: #1e3a8a; }
+  .bar-blocked { width: 100%; background: var(--red); }
+  .bar-lbl    { font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .chart-legend { display: flex; gap: 10px; margin-top: 4px; }
+  .leg-item   { display: flex; align-items: center; gap: 3px; font-size: 10px; color: var(--muted); }
+  .leg-dot    { width: 7px; height: 7px; border-radius: 2px; }
+  .svc-row    { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 11px; }
+  .svc-row:last-child { margin-bottom: 0; }
+  .svc-name   { color: #94a3b8; }
+  .badge      { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+  .badge-on   { background: #0d2e24; color: var(--green); border: 0.5px solid #1a5040; }
+  .badge-off  { background: #2a1010; color: var(--red);   border: 0.5px solid #4a1515; }
+  .nvd-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .nvd-name   { font-size: 12px; font-weight: 600; }
+  .nvd-row    { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 0.5px solid var(--border); font-size: 11px; }
+  .nvd-row:last-child { border-bottom: none; }
+  .nvd-key    { color: var(--muted); }
+  .nvd-val    { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #94a3b8; }
+  .cam-grid   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
+  .cam-dot    { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+  #error-bar  { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #2a1010; color: var(--red); font-size: 11px; text-align: center; padding: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🖥</div>
+    <div>
+      <div class="logo-name">pirg30v2</div>
+      <div class="logo-tagline">"sua rede, sob controle"</div>
+      <div class="logo-dev"><span class="dot dot-g" id="status-dot"></span><span id="status-txt">dev. João Moraes</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="date"  id="date">--</div>
+  </div>
+</div>
+
+<div class="row-metrics">
+  <div class="card">
+    <div class="label">Clientes Wi-Fi</div>
+    <div class="val" id="m-clients" style="color:var(--green)">—</div>
+    <div class="sub" id="m-aps-on">— APs ativos</div>
+  </div>
+  <div class="card">
+    <div class="label">Bloqueios hoje</div>
+    <div class="val" id="m-blocked" style="color:var(--amber)">—</div>
+    <div class="sub" id="m-pct">— das queries</div>
+  </div>
+  <div class="card">
+    <div class="label">Queries DNS</div>
+    <div class="val" id="m-queries" style="color:var(--blue)">—</div>
+    <div class="sub">últimas 24h</div>
+  </div>
+  <div class="card">
+    <div class="label">Temperatura</div>
+    <div class="val" id="m-temp" style="color:var(--orange)">—</div>
+    <div class="sub" id="m-temp-st">CPU · Pi</div>
+  </div>
+</div>
+
+<div class="row-main">
+  <div class="card">
+    <div class="section-title">Access Points UniFi</div>
+    <div id="ap-list"><div style="color:var(--muted);font-size:12px;">Carregando...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Top bloqueados · AdGuard</div>
+    <div id="ag-list"><div style="color:var(--muted);font-size:12px;">Carregando...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">NVR · Intelbras</div>
+    <div class="nvd-header">
+      <span class="nvd-name" id="nvd-name">NVD - RG30</span>
+      <span class="badge badge-off" id="nvd-badge">—</span>
+    </div>
+    <div class="nvd-row">
+      <span class="nvd-key">💾 HD usado</span>
+      <span class="nvd-val" id="nvd-disk-used">—</span>
+    </div>
+    <div class="nvd-row">
+      <span class="nvd-key">💾 HD total</span>
+      <span class="nvd-val" id="nvd-disk-total">—</span>
+    </div>
+    <div class="nvd-row">
+      <span class="nvd-key">📊 Ocupação</span>
+      <span class="nvd-val" id="nvd-disk-pct">—</span>
+    </div>
+    <div class="nvd-row">
+      <span class="nvd-key">🔧 Disco</span>
+      <span class="nvd-val" id="nvd-disk-state">—</span>
+    </div>
+    <div class="nvd-row">
+      <span class="nvd-key">📹 Câmeras</span>
+      <span class="nvd-val" id="nvd-cameras">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="row-bottom">
+  <div class="card">
+    <div class="section-title">Sistema · Pi</div>
+    <div class="sys-row">
+      <span class="sys-label">CPU</span>
+      <div class="sys-bar"><div class="sys-fill" id="bar-cpu" style="width:0%;background:var(--blue)"></div></div>
+      <span class="sys-val" id="val-cpu" style="color:var(--blue)">—</span>
+    </div>
+    <div class="sys-row">
+      <span class="sys-label">RAM</span>
+      <div class="sys-bar"><div class="sys-fill" id="bar-ram" style="width:0%;background:var(--amber)"></div></div>
+      <span class="sys-val" id="val-ram" style="color:var(--amber)">—</span>
+    </div>
+    <div class="sys-row">
+      <span class="sys-label">Up</span>
+      <div class="sys-bar" style="background:transparent"></div>
+      <span class="sys-val mono" id="val-up" style="color:var(--green);font-size:10px;">—</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">DNS últimas amostras</div>
+    <div class="chart-bars" id="chart-bars">
+      <div style="color:var(--muted);font-size:11px;align-self:center;">Aguardando dados...</div>
+    </div>
+    <div class="chart-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#1e3a8a;"></div>Permitidas</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--red);"></div>Bloqueadas</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Serviços</div>
+    <div class="svc-row"><span class="svc-name">UniFi Controller</span><span class="badge badge-off" id="svc-unifi">—</span></div>
+    <div class="svc-row"><span class="svc-name">AdGuard Home</span>  <span class="badge badge-off" id="svc-ag">—</span></div>
+    <div class="svc-row"><span class="svc-name">Motion (câmera)</span><span class="badge badge-off" id="svc-mot">—</span></div>
+    <div class="svc-row" style="margin-top:4px;border-top:0.5px solid var(--border);padding-top:5px;">
+      <span class="svc-name">Última atualização</span>
+      <span class="mono" style="font-size:10px;color:var(--muted);" id="last-update">—</span>
+    </div>
+  </div>
+</div>
+
+<div id="error-bar"></div>
+
+<script>
+const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const history=[];
+
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    String(n.getHours()).padStart(2,'0')+':'+
+    String(n.getMinutes()).padStart(2,'0')+':'+
+    String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('date').textContent=
+    DAYS[n.getDay()]+', '+n.getDate()+' '+MONTHS[n.getMonth()]+' '+n.getFullYear();
+}
+
+function fmt(n){ return n>=1000?(n/1000).toFixed(1)+'k':String(n); }
+function badge(el,on){ el.textContent=on?'online':'offline'; el.className='badge '+(on?'badge-on':'badge-off'); }
+function tempColor(t){ return t>=75?'var(--red)':t>=60?'var(--amber)':'var(--orange)'; }
+
+function diskColor(pct){
+  if(pct>=90) return 'var(--red)';
+  if(pct>=70) return 'var(--amber)';
+  return 'var(--green)';
+}
+
+function renderAPs(aps){
+  if(!aps||!aps.length){
+    document.getElementById('ap-list').innerHTML='<div style="color:var(--muted);font-size:11px;">Nenhum AP encontrado</div>';
+    return;
+  }
+  const max=Math.max(...aps.map(a=>a.clients),1);
+  document.getElementById('ap-list').innerHTML=aps.map(ap=>{
+    const on=ap.state===1;
+    const pct=Math.round((ap.clients/max)*100);
+    const dc=on?'dot-g':ap.state===0?'dot-r':'dot-a';
+    return `<div class="ap-row">
+      <div class="ap-info">
+        <div class="ap-name"><span class="dot ${dc}"></span>${ap.name}</div>
+        <div class="ap-band" style="padding-left:11px">${on?ap.band||'—':'offline'}</div>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${on?pct:0}%;${!on?'background:var(--red)':''}"></div></div>
+      <div class="ap-cnt" style="${!on?'color:var(--red)':''}">${on?ap.clients+' cli':'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAG(top){
+  if(!top||!top.length){
+    document.getElementById('ag-list').innerHTML='<div style="color:var(--muted);font-size:11px;">Sem dados ainda</div>';
+    return;
+  }
+  document.getElementById('ag-list').innerHTML=top.map(([d,c])=>
+    `<div class="ag-row"><span class="ag-domain" title="${d}">${d}</span><span class="ag-cnt">${c}×</span></div>`
+  ).join('');
+}
+
+function renderNVD(nvd){
+  const bdg = document.getElementById('nvd-badge');
+  if(nvd.online){
+    bdg.textContent='online'; bdg.className='badge badge-on';
+  } else {
+    bdg.textContent='offline'; bdg.className='badge badge-off';
+  }
+  document.getElementById('nvd-name').textContent       = nvd.name || 'NVD - RG30';
+  document.getElementById('nvd-disk-used').textContent  = nvd.online ? nvd.diskUsed  : '—';
+  document.getElementById('nvd-disk-total').textContent = nvd.online ? nvd.diskTotal : '—';
+  const pctEl = document.getElementById('nvd-disk-pct');
+  pctEl.textContent  = nvd.online ? nvd.diskPct + '%' : '—';
+  pctEl.style.color  = nvd.online ? diskColor(nvd.diskPct) : '#94a3b8';
+  document.getElementById('nvd-disk-state').textContent = nvd.online ? nvd.diskState : '—';
+  document.getElementById('nvd-cameras').textContent    = nvd.online ? nvd.cameras + ' conectadas' : '—';
+}
+
+function renderChart(h){
+  if(!h.length) return;
+  const maxQ=Math.max(...h.map(x=>x.q),1);
+  document.getElementById('chart-bars').innerHTML=h.map((x,i)=>{
+    const ah=Math.round((x.q-x.b)/maxQ*42);
+    const bh=Math.round(x.b/maxQ*42);
+    const hl=i===h.length-1?'box-shadow:0 0 5px #3b82f6aa;':'';
+    const lbl=i===h.length-1?'<span style="font-size:9px;color:var(--blue);">agora</span>':'<span class="bar-lbl">—</span>';
+    return `<div class="bar-col">
+      <div class="bar-allowed" style="height:${ah}px;${hl}"></div>
+      <div class="bar-blocked" style="height:${bh}px;"></div>
+      ${lbl}
+    </div>`;
+  }).join('');
+}
+
+async function fetchStats(){
+  try{
+    const r=await fetch('/api/stats');
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    document.getElementById('error-bar').style.display='none';
+    document.getElementById('status-dot').className='dot dot-g';
+    document.getElementById('status-txt').textContent='dev. João Moraes';
+    const total=(d.aps||[]).reduce((s,a)=>s+(a.state===1?a.clients:0),0);
+    const apsOn=(d.aps||[]).filter(a=>a.state===1).length;
+    document.getElementById('m-clients').textContent=total;
+    document.getElementById('m-aps-on').textContent=apsOn+' AP'+(apsOn!==1?'s':'')+' ativos';
+    document.getElementById('m-blocked').textContent=fmt(d.adguard.blocked);
+    document.getElementById('m-pct').textContent=d.adguard.pct+'% das queries';
+    document.getElementById('m-queries').textContent=fmt(d.adguard.queries);
+    const t=d.system.temp;
+    document.getElementById('m-temp').textContent=t+'°C';
+    document.getElementById('m-temp').style.color=tempColor(t);
+    document.getElementById('m-temp-st').textContent=t>=75?'⚠ quente!':t>=60?'atenção':'CPU · Pi';
+    renderAPs(d.aps);
+    renderAG(d.adguard.topBlocked);
+    renderNVD(d.nvd);
+    const cp=d.system.cpu;
+    const rp=Math.round(d.system.ramUsed/d.system.ramTotal*100);
+    document.getElementById('bar-cpu').style.width=cp+'%';
+    document.getElementById('val-cpu').textContent=cp+'%';
+    document.getElementById('bar-ram').style.width=rp+'%';
+    document.getElementById('val-ram').textContent=d.system.ramUsed+'MB';
+    document.getElementById('val-up').textContent=d.system.uptime;
+    badge(document.getElementById('svc-unifi'),d.services.unifi);
+    badge(document.getElementById('svc-ag'),d.services.adguard);
+    const sm=document.getElementById('svc-mot');
+    sm.textContent=d.services.motion?'ativo':'offline';
+    sm.className='badge '+(d.services.motion?'badge-on':'badge-off');
+    history.push({q:d.adguard.queries,b:d.adguard.blocked});
+    if(history.length>6) history.shift();
+    renderChart(history);
+    const n=new Date();
+    document.getElementById('last-update').textContent=
+      String(n.getHours()).padStart(2,'0')+':'+
+      String(n.getMinutes()).padStart(2,'0')+':'+
+      String(n.getSeconds()).padStart(2,'0');
+  }catch(e){
+    document.getElementById('status-dot').className='dot dot-r';
+    document.getElementById('status-txt').textContent='sem conexão';
+    const eb=document.getElementById('error-bar');
+    eb.style.display='block';
+    eb.textContent='Aguardando serviços... ('+e.message+')';
+    setTimeout(fetchStats, 10000);
+  }
+}
+
+tick(); setInterval(tick,1000);
+fetchStats(); setInterval(fetchStats,30000);
+</script>
+</body>
+</html>
